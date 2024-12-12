@@ -19,6 +19,7 @@ import system.sales.system_sales.Exception.DTO.InsufficientStockException;
 import system.sales.system_sales.Exception.DTO.MoveNotFoundException;
 import system.sales.system_sales.Exception.DTO.MoveTypeNotFoundException;
 import system.sales.system_sales.Exception.DTO.ProductNotFoundException;
+import system.sales.system_sales.Exception.DTO.SaleNotFoundException;
 import system.sales.system_sales.Exception.DTO.SupplierNotFoundException;
 
 @ControllerAdvice
@@ -26,6 +27,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler{
 
     @ExceptionHandler(SupplierNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleSupplierNotFoundException(SupplierNotFoundException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(SaleNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSaleNotFoundException(SaleNotFoundException ex){
         ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
@@ -57,11 +64,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler{
         ErrorResponse errorResponse= new ErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
-     @ExceptionHandler(InsufficientStockException.class)
-    public ResponseEntity<ErrorResponse> handleInsufficientStockException(InsufficientStockException ex) {
-        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
+    
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
@@ -72,6 +75,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler{
 
 
 
+
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientStockException(InsufficientStockException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
     /*
      * Valid
     */

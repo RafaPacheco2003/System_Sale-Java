@@ -7,7 +7,6 @@ import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 
 import lombok.Data;
 import system.sales.system_sales.Entity.Move;
@@ -23,7 +22,6 @@ public class MoveDTO {
     @Max(value = 100000, message = "La cantidad no puede ser mayor a 100,000")
     private Integer quantity;
 
-    @NotNull(message = "El usuario es obligatorio")
     private Integer id_usuario;
 
     private String name_usuario;

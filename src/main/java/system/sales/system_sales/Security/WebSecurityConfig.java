@@ -33,6 +33,7 @@ public class WebSecurityConfig {
                 .csrf().disable()
                 .authorizeHttpRequests()  // Cambia authorizeRequests() a authorizeHttpRequests()
                     .requestMatchers("/register").permitAll()  // Cambia antMatchers() a requestMatchers()
+                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/email/**").permitAll()  // Permitir acceso a Swagger
                     .anyRequest().authenticated()  // Cualquier otra ruta requiere autenticación
                 .and()
                 .httpBasic()

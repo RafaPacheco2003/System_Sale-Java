@@ -1,88 +1,146 @@
 package system.sales.system_sales.Modal.Impl;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import system.sales.system_sales.DTO.DetailsSaleDTO;
 import system.sales.system_sales.DTO.SaleDTO;
-import system.sales.system_sales.Entity.DetailsSale;
-import system.sales.system_sales.Entity.Product;
+
+import system.sales.system_sales.Entity.PaymentMethod;
+
 import system.sales.system_sales.Entity.Sale;
-import system.sales.system_sales.Exception.DTO.ProductNotFoundException;
+
+import system.sales.system_sales.Exception.DTO.SaleNotFoundException;
+import system.sales.system_sales.Modal.DetailsSaleService;
+import system.sales.system_sales.Modal.FinancialCalculationService;
 import system.sales.system_sales.Modal.SaleService;
 import system.sales.system_sales.Repository.DetailsRepository;
 import system.sales.system_sales.Repository.ProductRepository;
 import system.sales.system_sales.Repository.SaleRepository;
+import system.sales.system_sales.Security.TokenUtils;
 
 @Service
 public class SaleServiceImpl implements SaleService {
 
     @Autowired
     private SaleRepository saleRepository;
-
     @Autowired
     private ProductRepository productRepository;
     @Autowired
     private DetailsRepository detailsSaleRepository;
+    @Autowired
+    private DetailsSaleService detailsSaleService;
 
     @Autowired
     private ModelMapper modelMapper;
 
-    @Override
+    @Autowired
+    private FinancialCalculationService financialCalculationService;
+
     public SaleDTO createSaleDTO(SaleDTO saleDTO) {
         // Mapear SaleDTO a Sale (entidad)
         Sale sale = modelMapper.map(saleDTO, Sale.class);
-
-        // Guardar la venta para obtener el ID (sin detalles aún)
+        
+        // Guardar la venta inicial para obtener el ID (sin detalles aún)
         sale = saleRepository.save(sale);
-
-        double totalAmount = 0;
-
-        // Iterar sobre los detalles de la venta (DetailsSaleDTO)
-        for (DetailsSaleDTO detailsDTO : saleDTO.getDetailsSales()) {
-            // Buscar el producto por su ID
-            Product product = productRepository.findById(detailsDTO.getId_product())
-                    .orElseThrow(() -> new ProductNotFoundException(
-                            "Producto no encontrado con ID: " + detailsDTO.getId_product()));
-
-            // Verificar si el stock es suficiente
-            if (product.getStock() < detailsDTO.getQuantity()) {
-                throw new ProductNotFoundException(
-                        "Stock insuficiente para el producto con ID: " + product.getId_product());
-            }
-
-            // Mapear DetailsSaleDTO a DetailsSale (entidad)
-            DetailsSale detailsSale = modelMapper.map(detailsDTO, DetailsSale.class);
-
-            // Asociar el producto y la venta a los detalles
-            detailsSale.setProduct(product);
-            detailsSale.setSale(sale);
-
-            // Calcular el monto total para los detalles actuales
-            double totalPrice = product.getPrice() * detailsDTO.getQuantity();
-            detailsSale.setTotalPrice(totalPrice);
-            detailsSale.setUnitPrice(product.getPrice());
-
-            // Actualizar el monto total de la venta
-            totalAmount += totalPrice;
-
-            // Guardar los detalles de la venta
-            detailsSaleRepository.save(detailsSale);
-
-            // (Opcional) Restar la cantidad del stock del producto
-            product.setStock(product.getStock() - detailsDTO.getQuantity());
-            productRepository.save(product);
-        }
-
+        
+        double totalAmount = financialCalculationService.calculateTotalSaleAmount(saleDTO.getDetailsSales());
+               
+        // Asociar los detalles de la venta a la venta
+        detailsSaleService.addDetailsToSale(sale, saleDTO.getDetailsSales());
+        
         // Asignar el monto total a la venta
         sale.setTotalAmount(totalAmount);
-
+        
         // Guardar la venta actualizada con el monto total
         sale = saleRepository.save(sale);
 
         // Retornar la venta mapeada a SaleDTO
         return modelMapper.map(sale, SaleDTO.class);
     }
+
+    
+
+    
+    
+
+    @Override
+    public Optional<SaleDTO> getByIdSale(Long id_sale) {
+        Optional<Sale> sale = saleRepository.findById(id_sale);
+    
+        // Lanzamos una excepción si no se encuentra la venta
+        if (!sale.isPresent()) {
+            throw new RuntimeException("No se encontro ha encontrado la venta");
+        }
+    
+        // Usamos map para convertir el Sale en un SaleDTO
+        return sale.map(s -> {
+            SaleDTO saleDTO = modelMapper.map(s, SaleDTO.class);
+            saleDTO.setFromSale(s);
+            return saleDTO;
+        });
+    }
+    
+
+    @Override
+    public List<SaleDTO> getAllSale() {
+       List<Sale> sales= saleRepository.findAll();
+
+       if (sales.isEmpty()) {
+            throw new RuntimeException("No hay ventas disponibles");
+
+       }
+
+       return sales.stream()
+                .map(sale ->{
+                    SaleDTO saleDTO = modelMapper.map(sale, SaleDTO.class);
+
+                    saleDTO.setFromSale(sale);
+                    return saleDTO;
+                })
+                .collect(Collectors.toList());
+    }
+
+
+
+
+
+
+    @Override
+    public Integer getIdUserFromToken(String token) {
+        return TokenUtils.getUserIdFromToken(token);
+    }
+
+    @Override
+    public List<SaleDTO> getSaleByPaymentMethod(String paymentMethod) {
+        PaymentMethod method = PaymentMethod.valueOf(paymentMethod.toUpperCase());
+    
+        List<Sale> sales = saleRepository.findByPaymentMethod(method);
+    
+        if (sales.isEmpty()) {
+            throw new SaleNotFoundException("No se encontraron ventas con el metodo de pago: " + paymentMethod);
+        }
+    
+        return sales.stream()
+            .map(sale -> {
+                SaleDTO saleDTO = modelMapper.map(sale, SaleDTO.class);
+                saleDTO.setFromSale(sale);  // Esto asegura que los detalles se mapeen correctamente
+                return saleDTO;
+            })
+            .collect(Collectors.toList());
+    }
+    
+
+
+
+
+    
+    
+
+   
 
 }

@@ -6,7 +6,7 @@ import java.util.stream.Collectors; // Asegúrate de importar Collectors
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.stereotype.Service;
 
 import system.sales.system_sales.DTO.ProductDTO;
@@ -36,6 +36,7 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private SupplierRepository supplierRepository;
 
+    @Override
     public ProductDTO creaProductDTO(ProductDTO productDTO) {
         Product product = modelMapper.map(productDTO, Product.class); // Convierte ProductDTO a Product
         product.setStock(0); // Inicializa el stock en 0
@@ -75,40 +76,41 @@ public class ProductServiceImpl implements ProductService {
         // Buscar el producto existente por su ID
         Product existingProduct = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Producto no encontrado"));
-    
-        // Buscar la categoría y el proveedor basados en los IDs proporcionados en productDTO
+
+        // Buscar la categoría y el proveedor basados en los IDs proporcionados en
+        // productDTO
         Category category = categoryRepository.findById(productDTO.getId_category())
                 .orElseThrow(() -> new CategoryNotFoundException("Category no encontrado"));
-    
+
         Supplier supplier = supplierRepository.findById(productDTO.getId_supplier())
                 .orElseThrow(() -> new SupplierNotFoundException("Proveedor no encontrado"));
-    
+
         // Actualizar los campos de existingProduct con los valores de productDTO
         existingProduct.setName(productDTO.getName());
         existingProduct.setDescription(productDTO.getDescription());
         existingProduct.setPrice(productDTO.getPrice());
         existingProduct.setStock(productDTO.getStock());
-    
+
         // Actualizar las relaciones con categoría y proveedor
         existingProduct.setCategory(category);
         existingProduct.setSupplier(supplier);
-    
+
         // Actualizar la imagen solo si se proporciona una nueva
         if (productDTO.getImagePath() != null && !productDTO.getImagePath().isEmpty()) {
             existingProduct.setImagePath(productDTO.getImagePath());
         }
-    
+
         // Guardar el producto actualizado en la base de datos
         Product updatedProduct = productRepository.save(existingProduct);
-    
+
         // Retornar el DTO del producto actualizado
         return modelMapper.map(updatedProduct, ProductDTO.class);
     }
-    
+
     @Override
     public List<ProductDTO> getaAllProduct() {
         List<Product> products = productRepository.findAll();
-         if (products.isEmpty()) {
+        if (products.isEmpty()) {
             throw new ProductNotFoundException("No hay productos disponibles");
         }
 
@@ -128,4 +130,17 @@ public class ProductServiceImpl implements ProductService {
     public void deleteProduct(Long productId) {
         productRepository.deleteById(productId);
     }
+
+    @Override
+    public void updateProductStock(ProductDTO productDTO, int quantity) {
+        // Convertir ProductDTO a Product (la entidad)
+        Product product = modelMapper.map(productDTO, Product.class);
+
+        // Restar la cantidad al stock
+        product.setStock(product.getStock() - quantity);
+
+        // Guardar el producto actualizado
+        productRepository.save(product);
+    }
+
 }

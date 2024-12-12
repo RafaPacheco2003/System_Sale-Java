@@ -44,7 +44,6 @@ public class Move {
 
     @ManyToOne
     @JoinColumn(name = "id_usuario")
-    @NotNull(message = "El usuario es obligatorio")
     private Usuario usuario;
 
     @ManyToOne
