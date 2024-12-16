@@ -15,7 +15,7 @@ public class ProductDTO {
     private Long id_product;
 
     // Este campo se usa para la subida de imagen durante la creación del producto
-    @NotNull(message = "Image cannot be null for creation")
+    
     private MultipartFile image;
 
     // Este campo será el path de la imagen cuando se responda al cliente

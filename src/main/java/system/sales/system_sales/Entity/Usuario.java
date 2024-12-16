@@ -16,6 +16,7 @@ public class Usuario {
     private String nombre;
     private String email;
     private String password;
+    private boolean enabled;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "usuario_role",

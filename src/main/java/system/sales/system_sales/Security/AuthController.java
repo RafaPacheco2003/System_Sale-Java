@@ -15,8 +15,6 @@ import system.sales.system_sales.Entity.Usuario;
 import system.sales.system_sales.Repository.RoleRepository;
 import system.sales.system_sales.Repository.UsuarioRepository;
 
-
-
 @RestController
 public class AuthController {
 
@@ -28,6 +26,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthService authService; // Se necesita para la funcionalidad de enviar el correo
 
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@RequestBody RegisterRequest registerRequest) {
@@ -57,7 +58,10 @@ public class AuthController {
         // Guardar el usuario en la base de datos
         usuarioRepository.save(usuario);
 
-        return ResponseEntity.ok("Usuario registrado con éxito");
+        // Llamar al servicio para registrar al usuario y enviar el correo de confirmación
+        authService.registerUser(usuario);
+
+        return ResponseEntity.ok("Usuario registrado con éxito. Por favor, revisa tu correo para confirmar tu cuenta.");
     }
 
 }

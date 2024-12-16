@@ -10,19 +10,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import system.sales.system_sales.DTO.SaleDTO;
-
+import system.sales.system_sales.Entity.Customer;
 import system.sales.system_sales.Entity.PaymentMethod;
 
 import system.sales.system_sales.Entity.Sale;
-
+import system.sales.system_sales.Entity.Usuario;
 import system.sales.system_sales.Exception.DTO.SaleNotFoundException;
 import system.sales.system_sales.Filter.FilterSale.SaleFilter;
 import system.sales.system_sales.Modal.DetailsSaleService;
 import system.sales.system_sales.Modal.FinancialCalculationService;
 import system.sales.system_sales.Modal.SaleService;
+import system.sales.system_sales.Repository.CustomerRepository;
 import system.sales.system_sales.Repository.DetailsRepository;
 import system.sales.system_sales.Repository.ProductRepository;
 import system.sales.system_sales.Repository.SaleRepository;
+import system.sales.system_sales.Repository.UsuarioRepository;
 import system.sales.system_sales.Response.SalesResponse;
 import system.sales.system_sales.Security.TokenUtils;
 
@@ -37,6 +39,10 @@ public class SaleServiceImpl implements SaleService {
     private DetailsRepository detailsSaleRepository;
     @Autowired
     private DetailsSaleService detailsSaleService;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+    @Autowired
+    private CustomerRepository customerRepository;
 
     @Autowired
     private List<SaleFilter> filters; // Inyección de los filtros
@@ -52,7 +58,14 @@ public class SaleServiceImpl implements SaleService {
         // Mapear SaleDTO a Sale (entidad)
         Sale sale = modelMapper.map(saleDTO, Sale.class);
         
+        Usuario usuario = usuarioRepository.findById(saleDTO.getId_usuario())
+                .orElseThrow(() -> new SaleNotFoundException("Usuario no encontrado" ));
+        Customer customer = customerRepository.findById(saleDTO.getId_customer())
+                .orElseThrow(() -> new SaleNotFoundException("Cliente no encotrado"));
+        
+        sale.setCustomer(customer);
         sale.setDate(new Date());
+        sale.setUsuario(usuario);
         // Guardar la venta inicial para obtener el ID (sin detalles aún)
         sale = saleRepository.save(sale);
         
@@ -63,6 +76,12 @@ public class SaleServiceImpl implements SaleService {
         
         // Asignar el monto total a la venta
         sale.setTotalAmount(totalAmount);
+
+        // Calcular el cambio (changeAmount)
+        double receivedAmount = saleDTO.getReceivedAmount();  // Asegúrate de tener este campo en SaleDTO
+        double changeAmount = receivedAmount - totalAmount;
+
+        sale.setChangeAmount(changeAmount);
         
         // Guardar la venta actualizada con el monto total
         sale = saleRepository.save(sale);
@@ -206,23 +225,5 @@ public class SaleServiceImpl implements SaleService {
     }
 
 
-
-   
-
-
-
-
-    
-
-    
-    
-
-
-
-
-    
-    
-
-   
 
 }

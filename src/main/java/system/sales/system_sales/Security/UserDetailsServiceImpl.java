@@ -55,6 +55,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 // Si no se encuentra el usuario, lanza una excepción indicando que el usuario no existe.
                 .orElseThrow(() -> new UsernameNotFoundException("El usuario con email " + email + " no existe"));
         
+
+        // Verifica si el usuario está habilitado
+        if (!usuario.isEnabled()) {
+            throw new UsernameNotFoundException("Cuenta no confirmada. Por favor, verifica tu correo.");
+        }
         // Retorna una instancia de UserDetailsImpl que envuelve al usuario encontrado.
         // UserDetailsImpl es una implementación de UserDetails que adapta el objeto Usuario.
         return new UserDetailsImpl(usuario, usuarioRoleRepository);
