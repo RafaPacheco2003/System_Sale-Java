@@ -1,4 +1,4 @@
-package system.sales.system_sales.Response;
+package system.sales.system_sales.HTTP.Response;
 
 import java.util.List;
 

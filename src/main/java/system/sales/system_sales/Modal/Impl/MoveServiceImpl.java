@@ -23,7 +23,7 @@ import system.sales.system_sales.Repository.ProductRepository;
 import system.sales.system_sales.Repository.UsuarioRepository;
 import system.sales.system_sales.Security.TokenUtils;
 
-import system.sales.system_sales.Strategy.MoveStock.StockAdjustementStrategy;
+import system.sales.system_sales.Strategy.MoveStock.StockAdjustmentStrategy;
 
 @Service
 public class MoveServiceImpl implements MoveService {
@@ -40,59 +40,53 @@ public class MoveServiceImpl implements MoveService {
     @Autowired
     private ModelMapper modelMapper;
 
-    //Mapear movimientos
     @Autowired
-    private Map<MoveType, StockAdjustementStrategy> moveMap;
-
-
+    private Map<MoveType, StockAdjustmentStrategy> moveMap;
 
     @Override
     public MoveDTO createMoveDTO(MoveDTO moveDTO) {
         // Convierte MoveDTO a Move
         Move move = new Move();
         move.setQuantity(moveDTO.getQuantity());
-    
+
         // Asigna usuario y producto utilizando sus IDs
         Usuario usuario = usuarioRepository.findById(moveDTO.getId_usuario())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         Product product = productRepository.findById(moveDTO.getId_product())
                 .orElseThrow(() -> new ProductNotFoundException("Producto no encontrado"));
-    
+
         move.setUsuario(usuario);
         move.setProduct(product);
         move.setDate(new Date()); // Fecha actual
-    
+
         // Asegúrate de que moveType esté correctamente asignado desde el DTO
         MoveType moveType = moveDTO.getMoveType();
         if (moveType == null) {
             throw new MoveTypeNotFoundException("Tipo de movimiento no especificado");
         }
-    
+
         move.setMoveType(moveType);
-    
+
         // Obtener la estrategia de ajuste de stock
-        StockAdjustementStrategy strategy = moveMap.get(moveType);
+        StockAdjustmentStrategy strategy = moveMap.get(moveType);
         if (strategy == null) {
             throw new MoveTypeNotFoundException("Estrategia no encontrada para el tipo de movimiento: " + moveType);
         }
-    
+
         // Ajustar el stock del producto usando la estrategia correspondiente
         strategy.adjust(product, move);
-    
+
         // Guardar producto actualizado
         productRepository.save(product);
-    
+
         // Guardar el movimiento
         Move savedMove = moveRepository.save(move);
-    
+
         // Convertir el movimiento guardado a DTO y devolverlo
         MoveDTO savedMoveDTO = new MoveDTO();
         savedMoveDTO.setFromMove(savedMove);
         return savedMoveDTO;
     }
-    
-    
-
 
     @Override
     public Optional<MoveDTO> getMoveById(Long moveId) {
@@ -122,9 +116,9 @@ public class MoveServiceImpl implements MoveService {
                 .collect(Collectors.toList());
     }
 
-     @Override
+    @Override
     public List<MoveDTO> getMoveByType(String type) {
-        
+
         // Utiliza la fábrica para obtener el tipo de movimiento
         MoveType moveType = MoveTypeStrategyFactory.getMoveType(type);
 
@@ -145,34 +139,6 @@ public class MoveServiceImpl implements MoveService {
                 })
                 .collect(Collectors.toList());
     }
-
-
-    /**
-     * Utils
-     
-
-    private void adJustProductStock(Product product, Move move) {
-
-        switch (move.getMoveType()) {
-            case IN:
-                product.setStock(product.getStock() + move.getQuantity());
-                break;
-            case OUT:
-                if (product.getStock() < move.getQuantity()) {
-                    throw new InsufficientStockException("Stock insuficientes para el producto");
-                }
-
-                product.setStock(product.getStock() - move.getQuantity());
-                break;
-            case ADDJUSTMENT:
-                product.setStock(move.getQuantity());
-
-                break;
-
-            default:
-                throw new MoveTypeNotFoundException("Tipo de movimiento no encontrado");
-        }
-    }*/
 
     @Override
     public Integer getUserIdFromToken(String token) {
